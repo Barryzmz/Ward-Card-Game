@@ -10,7 +10,7 @@
           <img :src="cardOne?.images?.png" />
         </div>
         <div class="d-flex justify-content-center align-items-start mt-4">
-          <button type="button" class="btn btn-primary" @click="getCards()">Draw
+          <button type="button" class="btn btn-primary" :disabled="!getCardsDone" @click="getCards()">Draw
             Cards</button>
         </div>
       </div>
@@ -34,6 +34,7 @@ let playerOne = ref(0);
 let playerTwo = ref(0);
 let playerOneScore = ref(0);
 let playerTwoScore = ref(0);
+let getCardsDone = ref(true);
 
 function translateCardsValue(value) {
   switch (value) {
@@ -73,15 +74,35 @@ async function getDeck() {
 }
 
 async function getCards() {
-  const result = await axios.get("https://www.deckofcardsapi.com/api/deck/" + deckID.value + "/draw/?count=2");
-  const remaining = result.data.cards;
-  const cards = result.data.cards;
-  cardOne.value = result.data.cards[0];
-  cardTwo.value = result.data.cards[1];
-  RefereeMatch(cardOne.value, cardTwo.value);
+  try {
+    getCardsDone.value = false
+    const result = await axios.get("https://www.deckofcardsapi.com/api/deck/" + deckID.value + "/draw/?count=2");
+    const remaining = result.data.cards;
+    const cards = result.data.cards;
+    cardOne.value = result.data.cards[0];
+    cardTwo.value = result.data.cards[1];
+    if (result.data.remaining < 2) {
+      alert("牌已用完，請重新洗牌");
+      getCardsDone.value = false;
+      return;
+    }
+    if (cardOne?.value && cardTwo?.value) {
+      RefereeMatch(cardOne.value, cardTwo.value);
+      getCardsDone.value = true
+    }
+  } catch (error) {
+    console.error('getCards error:', error);
+  } finally {
+    getCardsDone.value = true;
+  }
 }
 
 function RefereeMatch(cardOneValue: object, cardTwoValue: object) {
+  if (!cardOneValue || !cardTwoValue || !cardOneValue.value || !cardTwoValue.value) {
+    cardOne.value = {};
+    cardTwo.value = {};
+    return;
+  }
   const valueOne = parseInt(translateCardsValue(cardOneValue.value));
   const valueTwo = parseInt(translateCardsValue(cardTwoValue.value));
   if (valueOne > valueTwo) {
