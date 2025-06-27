@@ -1,9 +1,9 @@
 <template>
   <div class="container-fluid min-vh-100 p-0 bg-dark">
-    <div class="d-flex justify-content-center align-items-start py-5">
+    <div class="d-flex justify-content-center align-items-start pt-2">
       <h1 class="text-white">War Card Game</h1>
     </div>
-    <div class="d-flex justify-content-center align-items-start gap-4 my-5">
+    <div class="d-flex justify-content-center align-items-start gap-4 mt-5 pb-4">
       <div class="text-white" id="playerOne">
         <p class="fs-3">PlayerOne : {{ playerOneScore }}</p>
         <div style="border-radius: 10px; overflow: hidden;">
