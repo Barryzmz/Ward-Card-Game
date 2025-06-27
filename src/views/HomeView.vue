@@ -6,8 +6,13 @@
     <div class="d-flex justify-content-center align-items-start gap-4 mt-5 pb-4">
       <div class="text-white" id="playerOne">
         <p class="fs-3">PlayerOne : {{ playerOneScore }}</p>
-        <div style="border-radius: 10px; overflow: hidden;">
-          <img :src="cardOne?.images?.png" style="object-fit: cover;" />
+        <div class="card-flip-wrapper">
+          <div class="card-flip" :class="{ flipped: cardOneFlipped }">
+            <!-- 背面 -->
+            <img :src="backCard.images.png" class="card-face card-back" />
+            <!-- 正面 -->
+            <img :src="cardOne?.images?.png" class="card-face card-front" />
+          </div>
         </div>
         <div class="d-flex justify-content-center align-items-start mt-4">
           <button type="button" class="btn btn-primary" :disabled="!getCardsDone" @click="getCards()">Draw
@@ -16,8 +21,13 @@
       </div>
       <div class="text-white" id="playerTwo">
         <p class="fs-3">Computer : {{ playerTwoScore }}</p>
-        <div style="border-radius: 10px; overflow: hidden;">
-          <img :src="cardTwo?.images?.png" style="object-fit: cover;" />
+        <div class="card-flip-wrapper">
+          <div class="card-flip" :class="{ flipped: cardTwoFlipped }">
+            <!-- 背面 -->
+            <img :src="backCard.images.png" class="card-face card-back" />
+            <!-- 正面 -->
+            <img :src="cardTwo?.images?.png" class="card-face card-front" />
+          </div>
         </div>
       </div>
     </div>
@@ -31,6 +41,8 @@ let gameOver = ref(true);
 const backCard = BackCard;
 let cardOne = ref<Card>(BackCard);
 let cardTwo = ref<Card>(BackCard);
+const cardOneFlipped = ref(false);
+const cardTwoFlipped = ref(false);
 let deckID = ref(null);
 let playerOneScore = ref(0);
 let playerTwoScore = ref(0);
@@ -76,27 +88,32 @@ async function getDeck() {
 async function getCards() {
   try {
     getCardsDone.value = false
+    cardOneFlipped.value = false;
+    cardTwoFlipped.value = false;
+    await new Promise(resolve => setTimeout(resolve, 300));
     const result = await axios.get("https://www.deckofcardsapi.com/api/deck/" + deckID.value + "/draw/?count=2");
-    const remaining = result.data.cards;
     const cards = result.data.cards;
     // 1. 先設 cardOne，cardTwo 清空
-    cardOne.value = backCard;
-    cardTwo.value = backCard; // 顯示背面
     await nextTick();
     // 2. 延遲 500ms
-    await new Promise(resolve => setTimeout(resolve, 500));
+
     cardOne.value = cards[0];
     cardTwo.value = cards[1];
     await nextTick();
+    setTimeout(() => {
+      cardOneFlipped.value = true;
+      cardTwoFlipped.value = true;
+    }, 100);
     if (result.data.remaining < 2) {
       alert("The cards have been used up, please reshuffle");
       getCardsDone.value = false;
       return;
     }
-    if (cardOne?.value && cardTwo?.value) {
+    setTimeout(() => {
       RefereeMatch(cardOne.value, cardTwo.value);
-      getCardsDone.value = true
-    }
+      getCardsDone.value = true;
+    }, 500);
+
   } catch (error) {
     console.error('getCards error:', error);
   }
@@ -136,3 +153,35 @@ onMounted(async () => {
   }
 })
 </script>
+<style scoped>
+.card-flip-wrapper {
+  width: 226px;
+  height: 314px;
+  perspective: 1000px;
+}
+
+.card-flip {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+}
+
+.card-flip.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.card-front {
+  transform: rotateY(180deg);
+}
+</style>
