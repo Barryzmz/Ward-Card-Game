@@ -1,13 +1,13 @@
 <template>
   <div class="container-fluid min-vh-100 p-0 bg-dark">
-    <div class="d-flex justify-content-center align-items-start ">
+    <div class="d-flex justify-content-center align-items-start py-5">
       <h1 class="text-white">War Card Game</h1>
     </div>
     <div class="d-flex justify-content-center align-items-start gap-4 my-5">
       <div class="text-white" id="playerOne">
         <p class="fs-3">PlayerOne : {{ playerOneScore }}</p>
-        <div class="card">
-          <img :src="cardOne?.images?.png" />
+        <div style="border-radius: 10px; overflow: hidden;">
+          <img :src="cardOne?.images?.png" style="object-fit: cover;" />
         </div>
         <div class="d-flex justify-content-center align-items-start mt-4">
           <button type="button" class="btn btn-primary" :disabled="!getCardsDone" @click="getCards()">Draw
@@ -15,28 +15,28 @@
         </div>
       </div>
       <div class="text-white" id="playerTwo">
-        <p class="fs-3">PlayerTwo : {{ playerTwoScore }}</p>
-        <div class="card">
-          <img :src="cardTwo?.images?.png" />
+        <p class="fs-3">Computer : {{ playerTwoScore }}</p>
+        <div style="border-radius: 10px; overflow: hidden;">
+          <img :src="cardTwo?.images?.png" style="object-fit: cover;" />
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import axios from 'axios'
+import { type Card, BackCard } from '@/types/baseType'
 let gameOver = ref(true);
-let cardOne = ref({});
-let cardTwo = ref({});
+const backCard = BackCard;
+let cardOne = ref<Card>(BackCard);
+let cardTwo = ref<Card>(BackCard);
 let deckID = ref(null);
-let playerOne = ref(0);
-let playerTwo = ref(0);
 let playerOneScore = ref(0);
 let playerTwoScore = ref(0);
 let getCardsDone = ref(true);
 
-function translateCardsValue(value) {
+function translateCardsValue(value: any) {
   switch (value) {
     case "JACK":
       value = "11";
@@ -79,10 +79,17 @@ async function getCards() {
     const result = await axios.get("https://www.deckofcardsapi.com/api/deck/" + deckID.value + "/draw/?count=2");
     const remaining = result.data.cards;
     const cards = result.data.cards;
-    cardOne.value = result.data.cards[0];
-    cardTwo.value = result.data.cards[1];
+    // 1. 先設 cardOne，cardTwo 清空
+    cardOne.value = backCard;
+    cardTwo.value = backCard; // 顯示背面
+    await nextTick();
+    // 2. 延遲 500ms
+    await new Promise(resolve => setTimeout(resolve, 500));
+    cardOne.value = cards[0];
+    cardTwo.value = cards[1];
+    await nextTick();
     if (result.data.remaining < 2) {
-      alert("牌已用完，請重新洗牌");
+      alert("The cards have been used up, please reshuffle");
       getCardsDone.value = false;
       return;
     }
@@ -92,15 +99,13 @@ async function getCards() {
     }
   } catch (error) {
     console.error('getCards error:', error);
-  } finally {
-    getCardsDone.value = true;
   }
 }
 
-function RefereeMatch(cardOneValue: object, cardTwoValue: object) {
-  if (!cardOneValue || !cardTwoValue || !cardOneValue.value || !cardTwoValue.value) {
-    cardOne.value = {};
-    cardTwo.value = {};
+function RefereeMatch(cardOneValue: Card, cardTwoValue: Card) {
+  if (!cardOneValue || !cardTwoValue || !cardOneValue?.value || !cardTwoValue?.value) {
+    cardOne.value = { ...BackCard };
+    cardTwo.value = { ...BackCard };
     return;
   }
   const valueOne = parseInt(translateCardsValue(cardOneValue.value));
