@@ -5,7 +5,9 @@
     </div>
     <div class="d-flex justify-content-center align-items-start gap-4 mt-5 pb-4">
       <div class="text-white" id="playerOne">
-        <p class="fs-3">PlayerOne : {{ playerOneScore }}</p>
+        <p class="fs-3"
+          :class="{ 'text-warning': PlayerGetScore === 'playerOne', 'text-white': PlayerGetScore !== 'playerOne' }">
+          PlayerOne : {{ playerOneScore }}</p>
         <div class="card-flip-wrapper">
           <div class="card-flip" :class="{ flipped: cardOneFlipped }">
             <!-- 背面 -->
@@ -20,7 +22,9 @@
         </div>
       </div>
       <div class="text-white" id="playerTwo">
-        <p class="fs-3">Computer : {{ playerTwoScore }}</p>
+        <p class="fs-3"
+          :class="{ 'text-warning': PlayerGetScore === 'playerTwo', 'text-white': PlayerGetScore !== 'playerTwo' }">
+          Computer : {{ playerTwoScore }}</p>
         <div class="card-flip-wrapper">
           <div class="card-flip" :class="{ flipped: cardTwoFlipped }">
             <!-- 背面 -->
@@ -28,6 +32,22 @@
             <!-- 正面 -->
             <img :src="cardTwo?.images?.png" class="card-face card-front" />
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade show d-block" tabindex="-1" v-if="showModal" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center">
+        <div class="modal-header">
+          <h5 class="modal-title">🎉 Game Over</h5>
+        </div>
+        <div class="modal-body">
+          <p class="fs-4">{{ winner }} wins!</p>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button class="btn btn-primary" @click="resetGame">Play Again</button>
         </div>
       </div>
     </div>
@@ -47,6 +67,10 @@ let deckID = ref(null);
 let playerOneScore = ref(0);
 let playerTwoScore = ref(0);
 let getCardsDone = ref(true);
+let PlayerGetScore = ref("");
+const winner = ref('');
+const winTimes = 10;
+const showModal = ref(false);
 
 function translateCardsValue(value: any) {
   switch (value) {
@@ -129,20 +153,51 @@ function RefereeMatch(cardOneValue: Card, cardTwoValue: Card) {
   const valueTwo = parseInt(translateCardsValue(cardTwoValue.value));
   if (valueOne > valueTwo) {
     playerOneScore.value++;
+    PlayerGetScore.value = "playerOne";
   }
   else if (valueOne < valueTwo) {
     playerTwoScore.value++;
+    PlayerGetScore.value = "playerTwo";
   }
   else {
     const suitOne = translateCardsSuit(cardOneValue?.suit);
     const suitTwo = translateCardsSuit(cardTwoValue?.suit);
     if (suitOne > suitTwo) {
       playerOneScore.value++;
+      PlayerGetScore.value = "playerOne";
     }
     else {
       playerTwoScore.value++;
+      PlayerGetScore.value = "playerTwo";
     }
   }
+
+  checkGameOver()
+}
+
+function checkGameOver() {
+  if (playerOneScore.value >= winTimes) {
+    winner.value = 'PlayerOne'
+    showModal.value = true
+  }
+  else if (playerTwoScore.value >= winTimes) {
+    winner.value = 'Computer'
+    showModal.value = true
+  }
+  else {
+    return
+  }
+}
+
+function resetGame() {
+  playerOneScore.value = 0
+  playerTwoScore.value = 0
+  cardOne.value = { ...BackCard }
+  cardTwo.value = { ...BackCard }
+  PlayerGetScore.value = ''
+  showModal.value = false
+  deckID.value = null
+  getDeck()
 }
 
 onMounted(async () => {
